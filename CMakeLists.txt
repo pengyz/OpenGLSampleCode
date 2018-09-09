@@ -4,9 +4,8 @@ include("cmake/HunterGate.cmake")
 
 
 HunterGate(
-    URL "https://github.com/ruslo/hunter/archive/v0.23.4.tar.gz"
-    SHA1 "8b2255921208517a55c9533c500131387e3c3dd0"
-    LOCAL
+    URL "https://github.com/ruslo/hunter/archive/v0.23.24.tar.gz"
+    SHA1 "75f3b4507be7375370b25fa183c9c955e80ccf9c"
 )
 
 project (OpenGLSample)

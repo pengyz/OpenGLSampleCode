@@ -4,7 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <cstdio>
+#include <iostream>
 
 #include "shader.h"
 
@@ -14,9 +14,8 @@ int main(int argc, char** argv)
         printf("initialize glfw failed!");
         return -1;
     }
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwSetErrorCallback([](int error, const char* description) {
         fprintf(stderr, "Error: %s\n", description);
@@ -103,16 +102,15 @@ int main(int argc, char** argv)
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-
     // 在此之前不要忘记首先 use 对应的着色器程序（来设定uniform）
     Shader lightingShader;
     std::string errorLog;
     if (!lightingShader.attachShaderFile(GL_VERTEX_SHADER, "D:\\workspace\\OpenGLSampleCode\\Light.vert", &errorLog))
-        printf("vertex shader add failed: %s", errorLog.c_str());
+        std::cout << "vertex shader add failed: " << errorLog.c_str() << std::endl;
     if (!lightingShader.attachShaderFile(GL_FRAGMENT_SHADER, "D:\\workspace\\OpenGLSampleCode\\Light.frag", &errorLog))
-        printf("fragment shader add failed: %s", errorLog.c_str());
+        std::cout << "fragment shader add failed: " << errorLog.c_str() << std::endl;
     if (!lightingShader.compile(&errorLog))
-        printf("compile failed: %s", errorLog.c_str());
+        std::cout << "compile failed: " << errorLog.c_str() << std::endl;
     lightingShader.use();
     lightingShader.setUniform("objectColor", glm::vec3(1.0f, 0.5f, 0.31f));
     lightingShader.setUniform("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
@@ -124,8 +122,8 @@ int main(int argc, char** argv)
     model = glm::scale(model, glm::vec3(0.2f));
     lightingShader.setUniform("model", model);
 
-    //glm::mat4 view = glm::lookAt(glm::vec3(1, 0.0, 0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-
+    glm::mat4 view = glm::lookAt(glm::vec3(3, 5, 4), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+    lightingShader.setUniform("view", view);
 
     glm::mat4 projection = glm::mat4(1.0f);
     int width, height;
@@ -139,12 +137,6 @@ int main(int argc, char** argv)
         glfwPollEvents();
 
         lightingShader.use();
-        float radius = 10.0f;
-        float camX = sin(glfwGetTime()) * radius;
-        float camZ = cos(glfwGetTime()) * radius;
-        auto view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-        lightingShader.setUniform("view", view);
-
         glBindVertexArray(lightVAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glfwSwapBuffers(window);
