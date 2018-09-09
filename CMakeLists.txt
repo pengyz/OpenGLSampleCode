@@ -69,7 +69,7 @@ if(MSVC)
     # 4800 - forcing value to bool, stupid warning
     set(DEVILUTION_COMPILER_FLAGS "${DEVILUTION_COMPILER_FLAGS} /w44062")
     # 4061 - not all enumerator values are handled by the switch statement
-    add_definitions (-D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS )
+    add_definitions (-D_WIN32 -D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS )
     # SCL - because current boost is too old and emits this warning
     # CRT - something in nuklear.h
     if (FA_TREAT_WARNINGS_AS_ERRORS)
