@@ -2,11 +2,19 @@
 #include <glfw/glfw3.h>
 #include <cstdio>
 #include <string>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+
 #include "shader.h"
+
+#define OGL_VERSION_MAJOR           4
+#define OGL_VERSION_MINOR           6
 
 //////////////////////////////////////////////////////////
 static const char g_strVertShader[] = R"(
-    #version 330 core
+    #version 460 core
     layout (location = 0) in vec3 aPos;
     void main()
     {
@@ -15,11 +23,14 @@ static const char g_strVertShader[] = R"(
 
 )";
 static const char g_fragVertShader[] = R"(
-    #version 330 core
+    #version 460 core
     out vec4 FragColor;
+
+    uniform vec4 ourColor;    
+
     void main()
     {
-        FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
+        FragColor = ourColor;
     }
 
 )";
@@ -43,7 +54,7 @@ unsigned int indices[] = { // 注意索引从0开始!
 void processInput(GLFWwindow* pWindow);
 int initGLFW();
 GLFWwindow* createMainWindow(int width, int height, const std::string& title);
-bool initGlad(int major, int minor);
+bool initGlad();
 Shader* createShader(const std::string& strVertex, const std::string& strFrag);
 
 /////////////////////////////////////////////////
@@ -56,10 +67,11 @@ int main(int argc, char* argv[])
     if (!pMainWindow)
         return -2;
     glfwMakeContextCurrent(pMainWindow);
-    if (!initGlad(3, 3))
+    if (!initGlad())
         return -3;
-    //auto pShader = createShader(g_strVertShader, g_fragVertShader);
-    auto pShader = new Shader(g_strVertShader, g_fragVertShader);
+    auto pShader = createShader(g_strVertShader, g_fragVertShader);
+
+
     if (!pShader)
         return -4;
 
@@ -106,6 +118,7 @@ int main(int argc, char* argv[])
         glClear(GL_COLOR_BUFFER_BIT);
 
         pShader->use();
+        pShader->setUniform("ourColor", glm::vec4(0.f, sin(glfwGetTime()) / 2 + 0.5f, 0.f, 1.f));
         glBindVertexArray(g_vao);
         pFnRender();
 
@@ -146,8 +159,8 @@ int initGLFW()
 #endif
     });
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, OGL_VERSION_MAJOR);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, OGL_VERSION_MINOR);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #ifdef __APPLE__
     glfwWindowHint(GLFW_OPENGL_COMPAT_PROFILE, GL_TRUE);
@@ -173,14 +186,10 @@ GLFWwindow* createMainWindow(int width, int height, const std::string& title)
     return pMainWindow;
 }
 
-bool initGlad(int major, int minor)
+bool initGlad()
 {
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         printf("Failed to load opengl");
-        return false;
-    }
-    if (!(GLVersion.major >= major && GLVersion.minor >= minor)) {
-        printf("OpenGL core profile 4.6 not supported !");
         return false;
     }
     return true;
