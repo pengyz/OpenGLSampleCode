@@ -1,10 +1,11 @@
-ï»¿#include <glad/glad.h>
+#include <glad/glad.h>
 #include <glfw/glfw3.h>
 #include <cstdio>
 #include <string>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include "stb_image.h"
 
 
 #include "shader.h"
@@ -16,9 +17,17 @@
 static const char g_strVertShader[] = R"(
     #version 460 core
     layout (location = 0) in vec3 aPos;
+    layout (location = 1) in vec3 aColor;
+    layout (location = 2) in vec2 aTexCoord;
+    
+    out vec3 ourColor;
+    out vec2 TexCoord;
+    
     void main()
     {
-        gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
+        gl_Position = vec4(aPos, 1.0);
+        ourColor = aColor;
+        TexCoord = aTexCoord;
     }
 
 )";
@@ -26,26 +35,29 @@ static const char g_fragVertShader[] = R"(
     #version 460 core
     out vec4 FragColor;
 
-    uniform vec4 ourColor;    
+    in vec3 ourColor;
+    in vec2 TexCoord;
+
+    uniform sampler2D ourTexture;
 
     void main()
     {
-        FragColor = ourColor;
+        FragColor = texture(ourTexture, TexCoord);
     }
 
 )";
 
-
 float vertices[] = {
-    0.5f, 0.5f, 0.0f,   // å³ä¸Šè§’
-    0.5f, -0.5f, 0.0f,  // å³ä¸‹è§’
-    -0.5f, -0.5f, 0.0f, // å·¦ä¸‹è§’
-    -0.5f, 0.5f, 0.0f   // å·¦ä¸Šè§’
+    //     ---- Î»ÖÃ ----       ---- ÑÕÉ« ----     - ÎÆÀí×ø±ê -
+         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // ÓÒÉÏ
+         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // ÓÒÏÂ
+        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // ×óÏÂ
+        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // ×óÉÏ
 };
 
-unsigned int indices[] = { // æ³¨æ„ç´¢å¼•ä»Ž0å¼€å§‹! 
-    0, 1, 3, // ç¬¬ä¸€ä¸ªä¸‰è§’å½¢
-    1, 2, 3  // ç¬¬äºŒä¸ªä¸‰è§’å½¢
+unsigned int indices[] = { // ×¢ÒâË÷Òý´Ó0¿ªÊ¼! 
+    0, 1, 3, // µÚÒ»¸öÈý½ÇÐÎ
+    1, 2, 3  // µÚ¶þ¸öÈý½ÇÐÎ
 };
 
 /////////////////////////////////////////////
@@ -70,64 +82,61 @@ int main(int argc, char* argv[])
     if (!initGlad())
         return -3;
     auto pShader = createShader(g_strVertShader, g_fragVertShader);
-
-
     if (!pShader)
         return -4;
 
-
-    //generate buffers
-    GLuint g_vao, g_vbo, g_ebo;
-
+    //initialize
+    GLuint VAO, VBO, IBO, texture;
     {
-        //generate and bind a vao object, then all vbo calls will also bind to it
-        //it is a switcher or group that we could combine our vbo operations and switch it together.
-        glGenVertexArrays(1, &g_vao);
-        glBindVertexArray(g_vao);
-        //generate a vbo object
-        glGenBuffers(1, &g_vbo);
-        //bind it as array buffer, the target GL_ARRAY_BUFFER means position, color and etc
-        //it contains many elements in this array
-        glBindBuffer(GL_ARRAY_BUFFER, g_vbo);
+        glGenVertexArrays(1, &VAO);
+        glBindVertexArray(VAO);
+        glGenBuffers(1, &VBO);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
         glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, (void*)0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), nullptr);
         glEnableVertexAttribArray(0);
-
-        glGenBuffers(1, &g_ebo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_ebo);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (const void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (const void*)(6 * sizeof(float)));
+        glEnableVertexAttribArray(2);
+        glGenBuffers(1, &IBO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
 
-        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        //set texture paramerters
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        //load and generate texture
+        int imgWidth, imgHeight, nrChannels;
+        unsigned char* pData = stbi_load("D:\\workspace\\OpenGLSampleCode\\res\\container.jpg", &imgWidth, &imgHeight, &nrChannels, 0);
+        assert(pData);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imgWidth, imgHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, pData);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        stbi_image_free(pData);
+
     }
 
-    auto pFnRender = [&]() {
-        //glDrawArrays(GL_TRIANGLES, 0, 3);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-    };
-
     glEnable(GL_COLOR_BUFFER_BIT);
-    //glEnable(GL_DEPTH_TEST);
+    glClearColor(0.5, 0.5, 0.5, 0);
     glfwMakeContextCurrent(pMainWindow);
     while (!glfwWindowShouldClose(pMainWindow)) {
         processInput(pMainWindow);
-
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glBindVertexArray(VAO);
         pShader->use();
-        pShader->setUniform("ourColor", glm::vec4(0.f, sin(glfwGetTime()) / 2 + 0.5f, 0.f, 1.f));
-        glBindVertexArray(g_vao);
-        pFnRender();
+        pShader->setUniform("ourTexture", 0);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);        
 
         glfwSwapBuffers(pMainWindow);
         glfwPollEvents();
     }
 
-    glDeleteVertexArrays(1, &g_vao);
-    glDeleteBuffers(1, &g_vbo);
     pShader->unuse();
     delete pShader;
 
