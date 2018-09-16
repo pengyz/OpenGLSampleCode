@@ -97,23 +97,35 @@ add_library(Renderer STATIC
 target_link_libraries(Renderer ${HUNTER_LIBS})
 
 
-add_executable(HelloWindow
-	src/helloWindow.cpp
+add_executable(ColorSample
+	src/trangle.cpp
 )
 
-target_link_libraries(HelloWindow PUBLIC Renderer glad ${HUNTER_LIBS})
+target_link_libraries(ColorSample PUBLIC Renderer glad ${HUNTER_LIBS})
 if(WIN32)
-    set_target_properties(HelloWindow PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
+    set_target_properties(ColorSample PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
 endif()
 
 
 add_executable(TextureSample
 	src/texture.cpp
-	stb_image.h
-	stb_image.cpp
+	Renderer/stb_image.h
+	Renderer/stb_image.cpp
 )
 
 target_link_libraries(TextureSample PUBLIC Renderer glad ${HUNTER_LIBS})
 if(WIN32)
     set_target_properties(TextureSample PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
+endif()
+
+
+add_executable(TransformSample
+	src/transform.cpp
+	Renderer/stb_image.h
+	Renderer/stb_image.cpp
+)
+
+target_link_libraries(TransformSample PUBLIC Renderer glad ${HUNTER_LIBS})
+if(WIN32)
+    set_target_properties(TransformSample PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
 endif()
